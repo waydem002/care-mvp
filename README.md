@@ -35,7 +35,7 @@ This mock shows the core workflow: manage patients, schedule medication reminder
 - Project: `care-mvp`, org `PflegeDienst`, region `eu-central-1` (Frankfurt — EU data residency ✓)
 - Dashboard: https://supabase.com/dashboard/project/uruhhesynlheyyfithlp
 - Schema applied: all 5 tables (`profiles`, `patients`, `medications`, `reminders`, `notifications`), RLS enabled on all of them, both reminder functions created and hardened per the security advisor (pinned `search_path`, minimal `EXECUTE` grants)
-- `.env.local` is already filled in with the real project URL and anon key
+- Copy `.env.example` to `.env.local` and fill it with the project URL and keys
 
 Two things still need doing manually in the dashboard (not exposed via the MCP connector, by design):
 
