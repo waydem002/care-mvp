@@ -4,6 +4,30 @@ Admin dashboard for tracking patient medications and daily reminders. Built with
 
 This is the first slice of the full plan: patient management, medication scheduling, and a reminder board with sent/confirmed/missed status. WhatsApp/SMS sending, the family portal, appointment requests, and the insurance calculator are not built yet — see "What's deliberately not here" below.
 
+## Mock visual
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Pflege Admin                                  Today · 02 Sep 2026        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Patients                 │  Reminder board                                  │
+│ ──────────────────────  │                                                 │
+│ Anna Müller             │  08:00  Metformin     [Sent]   Confirmed        │
+│ 72 · Diabetes           │  12:30  Vitamin D     [Pending] Mark sent      │
+│ Meds: 3 active          │  18:00  Amlodipine   [Missed] Mark missed     │
+│                        │                                                 │
+│ Fritz Weber             │  Quick actions                                   │
+│ 64 · Hypertension       │  Generate today's reminders                      │
+│ Meds: 2 active          │  Add patient                                     │
+│                        │                                                 │
+│ + Add patient           │                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Sidebar: Dashboard | Patients | Reminders | Settings                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+This mock shows the core workflow: manage patients, schedule medication reminders, and move each reminder through sent / confirmed / missed states from one admin dashboard.
+
 ## 1. Set up Supabase
 
 **This project's Supabase instance is already created and set up**, via the Supabase MCP connector:
