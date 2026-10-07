@@ -32,7 +32,15 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute =
     request.nextUrl.pathname.startsWith("/dashboard") ||
     request.nextUrl.pathname.startsWith("/patients") ||
-    request.nextUrl.pathname.startsWith("/reminders");
+    request.nextUrl.pathname.startsWith("/reminders") ||
+    request.nextUrl.pathname.startsWith("/staff") ||
+    request.nextUrl.pathname.startsWith("/schedule") ||
+    request.nextUrl.pathname.startsWith("/tours") ||
+    request.nextUrl.pathname.startsWith("/requests") ||
+    request.nextUrl.pathname.startsWith("/insurance-calculator") ||
+    request.nextUrl.pathname.startsWith("/documents");
+  // Note: /book is deliberately NOT in this list — it's the public
+  // booking-request form and must work without a login.
 
   if (!user && isProtectedRoute) {
     const redirectUrl = new URL("/login", request.url);
@@ -47,5 +55,16 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/patients/:path*", "/reminders/:path*", "/login"],
+  matcher: [
+    "/dashboard/:path*",
+    "/patients/:path*",
+    "/reminders/:path*",
+    "/staff/:path*",
+    "/schedule/:path*",
+    "/tours/:path*",
+    "/requests/:path*",
+    "/insurance-calculator/:path*",
+    "/documents/:path*",
+    "/login",
+  ],
 };

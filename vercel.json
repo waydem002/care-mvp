@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/generate-reminders", "schedule": "5 0 * * *" },
+    { "path": "/api/cron/send-reminders", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/sweep-missed", "schedule": "*/15 * * * *" }
   ]
 }

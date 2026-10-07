@@ -59,6 +59,20 @@ export default function PatientForm() {
         <textarea id="notes" name="notes" rows={2} className={inputClass} />
       </div>
 
+      <div className="col-span-2 space-y-2 rounded-md border border-border bg-paper px-3 py-3">
+        <label className="flex items-start gap-2 text-sm text-ink">
+          <input type="checkbox" name="consent_data_processing" required className="mt-0.5" />
+          <span>
+            Patient (or their legal representative) has consented to data processing for care coordination.
+            <span className="text-status-missed"> Required.</span>
+          </span>
+        </label>
+        <label className="flex items-start gap-2 text-sm text-ink">
+          <input type="checkbox" name="consent_whatsapp" className="mt-0.5" />
+          <span>Separately consented to receiving WhatsApp messages, if that channel is used later.</span>
+        </label>
+      </div>
+
       <div className="col-span-2">
         <button
           type="submit"

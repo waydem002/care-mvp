@@ -8,6 +8,12 @@ const links = [
   { href: "/dashboard", label: "Today" },
   { href: "/patients", label: "Patients" },
   { href: "/reminders", label: "Reminder schedule" },
+  { href: "/staff", label: "Staff" },
+  { href: "/schedule", label: "Schedule" },
+  { href: "/tours", label: "Tours" },
+  { href: "/requests", label: "Booking requests" },
+  { href: "/insurance-calculator", label: "Insurance calculator" },
+  { href: "/documents", label: "Documents" },
 ];
 
 export default function Sidebar() {
@@ -22,7 +28,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-60 flex-col justify-between border-r border-border bg-brand text-white">
+    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col justify-between border-r border-border bg-brand text-white">
       <div>
         <div className="px-5 py-6">
           <p className="text-lg font-semibold leading-tight">Pflege Admin</p>
