@@ -436,6 +436,18 @@ create trigger audit_insurance_rates after insert or update or delete on insuran
 -- PDFs get their text extracted automatically for search, the original
 -- file stays downloadable via a signed URL.
 -- ---------------------------------------------------------------------
+create table if not exists documents (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  category text not null check (category in ('policy', 'procedure', 'general', 'patient_note')) default 'general',
+  patient_id uuid references patients(id) on delete set null,
+  content text not null,
+  created_by uuid references profiles(id),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists documents_patient_idx on documents (patient_id);
+
 alter table documents add column if not exists folder text not null default 'General';
 alter table documents add column if not exists file_path text;
 alter table documents add column if not exists file_name text;
@@ -458,18 +470,6 @@ create policy "staff manage documents bucket" on storage.objects
 -- ingests patient records. See README for the embedding-provider note.
 -- ---------------------------------------------------------------------
 create extension if not exists vector;
-
-create table if not exists documents (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  category text not null check (category in ('policy', 'procedure', 'general', 'patient_note')) default 'general',
-  patient_id uuid references patients(id) on delete set null,
-  content text not null,
-  created_by uuid references profiles(id),
-  created_at timestamptz not null default now()
-);
-
-create index if not exists documents_patient_idx on documents (patient_id);
 
 create table if not exists document_chunks (
   id uuid primary key default gen_random_uuid(),

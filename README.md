@@ -1,99 +1,103 @@
-# Pflege Admin — Module 1 (Medication Reminders)
+# Pflege Admin
 
-Admin dashboard for tracking patient medications and daily reminders. Built with Next.js 14 (App Router), Supabase, and Tailwind.
+A care-operations dashboard built with Next.js 14 App Router, Supabase, and Tailwind CSS. It brings together patient and medication management, reminders, staff scheduling, tour planning, public booking requests, an insurance estimate, and an internal document library.
 
-This is the first slice of the full plan: patient management, medication scheduling, and a reminder board with sent/confirmed/missed status. WhatsApp/SMS sending, the family portal, appointment requests, and the insurance calculator are not built yet — see "What's deliberately not here" below.
+## Current project status
 
-## 1. Set up Supabase
+The following features are implemented:
 
-**This project's Supabase instance is already created and set up**, via the Supabase MCP connector:
+- **Patients and medication reminders** (`/patients`, `/reminders`, `/dashboard`): manage patient records and medications, generate daily reminders, and track pending, sent, confirmed, and missed doses. Medication times are interpreted in the `Europe/Berlin` timezone.
+- **Staff and shift planning** (`/staff`, `/schedule`): maintain a staff roster independent of login accounts and assign shifts in a Monday-start month calendar.
+- **Home-visit tours** (`/tours`): arrange dated patient visits by staff member, manually order stops, and track planned, completed, or cancelled visits. Route optimization is not included.
+- **Public booking requests** (`/book`, `/requests`): visitors can submit a consultation, schedule-change, extra-visit, callback, or other request without an account. Staff can review requests and link them to a patient record when appropriate.
+- **Insurance calculator** (`/insurance-calculator`): estimate coverage and client costs using editable monthly benefit rates. It is an estimate, not legal or financial advice, and does not model every German care-insurance benefit.
+- **Internal documents and search** (`/documents`): organize knowledge by category and folder; paste text or upload PDF and `.txt` files. Text-based PDFs are extracted for search, and uploaded originals are held in a private Supabase Storage bucket. OpenAI embeddings enable semantic search when configured; otherwise search uses keyword matching. Scanned image-only PDFs have no searchable text. Upload limit: 10 MB.
+- **WhatsApp medication reminders**: a scheduled sender checks WhatsApp consent, submits an approved Meta message template when credentials are configured, and records outcomes. Without WhatsApp credentials it runs in dry-run mode and sends no messages.
+- **Privacy support on patient records**: record consent, view the audit trail, export patient data as JSON, and manage deletion requests through a review workflow.
 
-- Project: `care-mvp`, org `PflegeDienst`, region `eu-central-1` (Frankfurt — EU data residency ✓)
-- Dashboard: https://supabase.com/dashboard/project/uruhhesynlheyyfithlp
-- Schema applied: all 5 tables (`profiles`, `patients`, `medications`, `reminders`, `notifications`), RLS enabled on all of them, both reminder functions created and hardened per the security advisor (pinned `search_path`, minimal `EXECUTE` grants)
-- `.env.local` is already filled in with the real project URL and anon key
+The app is not a complete electronic health record or a guarantee of GDPR compliance. Review operational, privacy, and legal requirements before using it with real care data.
 
-Two things still need doing manually in the dashboard (not exposed via the MCP connector, by design):
+## Supabase setup
 
-1. **Get the service role key**: Dashboard → this project → **Project Settings → API → service_role secret**. Paste it into `.env.local` as `SUPABASE_SERVICE_ROLE_KEY`. This key bypasses RLS entirely — never commit it or expose it to the browser.
-2. **Create your first admin login**: Dashboard → **Authentication → Users → Add user**. Create one with your email + a password. The `handle_new_user` trigger fires automatically and creates their `profiles` row with `role = 'admin'` — nothing else needed.
+The existing project dashboard is at [supabase.com/dashboard/project/uruhhesynlheyyfithlp](https://supabase.com/dashboard/project/uruhhesynlheyyfithlp). Its primary database is configured in Frankfurt (`eu-central-1`). Verify the project and region before deploying or entering real data.
 
-If you're setting this up somewhere else from scratch instead (a new project, a different Supabase account), the general steps are:
-1. Create a project at [supabase.com](https://supabase.com) — **choose an EU region** for GDPR data residency.
-2. In the SQL editor, run the contents of `supabase/schema.sql`.
-3. In **Authentication → Providers**, make sure Email is enabled.
-4. In **Authentication → Users**, manually create your first admin user.
-5. Grab your keys from **Project Settings → API**.
+For a **new Supabase project**:
 
-## 2. Run locally
+1. Create a project in an EU region appropriate for your data residency requirements.
+2. In the SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql) once. It creates the application tables, RLS policies, database functions and triggers, document storage bucket, and insurance-rate seed data.
+3. Enable Email authentication.
+4. Add the first user from **Authentication → Users**. The database trigger creates a corresponding `profiles` record.
+5. Copy the project URL and API keys from **Project Settings → API** into `.env.local` as described below.
+
+Do not rerun the entire schema on an already-initialized project: policy and other DDL statements may already exist. Back up the database and use deliberate migrations when changing an existing deployment.
+
+## Local development
+
+Install dependencies and create `.env.local` from the example if you do not already have a local environment file:
 
 ```bash
 npm install
 cp .env.example .env.local
-# fill in .env.local with your Supabase URL + keys
+```
+
+Set the variables in `.env.local`:
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase client authentication |
+| `SUPABASE_SERVICE_ROLE_KEY` | For cron routes | Server-only Supabase access for scheduled reminder jobs; bypasses RLS |
+| `CRON_SECRET` | For cron routes/deployment | Random secret used to authorize scheduled route requests |
+| `WHATSAPP_ACCESS_TOKEN` | Optional | Meta WhatsApp Cloud API token; without it, sending is dry-run |
+| `WHATSAPP_PHONE_NUMBER_ID` | Optional | Registered Meta WhatsApp sender ID |
+| `WHATSAPP_TEMPLATE_NAME` | Optional | Approved template name; defaults to `medication_reminder` |
+| `OPENAI_API_KEY` | Optional | Enables semantic document search; otherwise keyword search is used |
+
+Never commit `.env.local`, service-role keys, or provider credentials. The service-role key must remain server-only.
+
+Start the development server:
+
+```bash
 npm run dev
 ```
 
-Visit `http://localhost:3000`, sign in with the admin user you created, then:
-1. Go to **Patients** → add a patient.
-2. Click into the patient → add a medication with reminder times (e.g. `08:00, 14:00, 20:00`).
-3. Go to **Today** → click **Generate today's reminders**. This calls the `generate_daily_reminders` SQL function, which creates a reminder row for every active medication time today.
-4. Use **Mark sent / Confirm taken / Mark missed** on each row to move it through its lifecycle.
+Open [http://localhost:3000](http://localhost:3000) and sign in with a user created in the Supabase project. The dashboard offers **Generate today's reminders**; reminder state can then be managed from the app.
 
-## 3. Deploy to Vercel
+Other useful commands:
 
-1. Push this to a GitHub repo, then import it in Vercel.
-2. Add the env vars from `.env.example` in the Vercel project settings — including the WhatsApp ones once you have them; leave them blank to stay in dry-run mode.
-3. `vercel.json` already defines three cron jobs:
-   - `generate-reminders` — runs once daily to materialize that day's reminders from active medications.
-   - `send-reminders` — runs every 5 minutes, sends due/consented reminders via WhatsApp (dry-run until real Meta credentials are set).
-   - `sweep-missed` — runs every 15 minutes and flips anything left `pending`/`sent` more than 90 minutes past its scheduled time to `missed`.
+```bash
+npm run build
+npm start
+```
 
-   All three routes check the request's `Authorization` header against `CRON_SECRET`. Vercel Cron sends this automatically once the env var is set — no extra config needed.
+## Deployment and scheduled jobs
 
-**Timezone note**: `generate_daily_reminders` explicitly interprets medication times as Europe/Berlin local time (not UTC), so "08:00" entered on the Medications form means 8am in Germany, correctly converted to the right UTC instant for storage. This was a real bug in an earlier version — entered times were silently drifting by the UTC/CEST offset — fixed and verified against a live test patient on 2026-09-02.
+Import the repository into Vercel and configure the environment variables above in the project settings. Apply the Supabase schema before deploying. `vercel.json` configures these cron routes:
 
-## What's built now
+| Route | Schedule | Purpose |
+| --- | --- | --- |
+| `/api/cron/generate-reminders` | Daily at 00:05 UTC | Generate the day's reminder rows using the Europe/Berlin date |
+| `/api/cron/send-reminders` | Every 5 minutes | Send due reminders when WhatsApp consent and credentials allow |
+| `/api/cron/sweep-missed` | Every 15 minutes | Mark pending or sent reminders more than 90 minutes overdue as missed |
 
-- **Module 1 — Medication reminders**: patients, medications, daily reminder generation, status tracking (pending/sent/confirmed/missed), timezone-correct scheduling
-- **Staff scheduling (Monthly Dienstplaner)**: a Staff page (roster management) and a Schedule page (real month-grid calendar, Monday-start) for assigning shifts. Shift types use German vocabulary (Frühdienst/Spätdienst/Nachtdienst/Bereitschaft/custom). Staff members are deliberately decoupled from login accounts (`profiles`) — someone can be on the roster without ever logging into the app. Verified against the live database with a multi-week test (shifts across three different dates, correctly grouped into the right month).
-- **Weekly tour planning (Weekly Toureplaner)**: a Tours page — week view (Monday-start, prev/next navigation), grouped by day then by staff member, showing each person's ordered home-visit stops with patient name, address, estimated time, and status (planned/completed/cancelled). Sequencing is manual by design — real route optimization needs a mapping/routing API, a separate decision not to guess into existence. Verified: a two-stop route for one staff member, correct ordering, and confirmed the database itself rejects two stops claiming the same position (tested by deliberately trying to insert a duplicate — correctly failed).
-- **Online booking (Online Terminbuchung)**: a public page at `/book` — no login required — where anyone can request a consultation, schedule change, extra visit, or callback. Staff review and approve/reject/complete requests on the `/requests` page. This is the first genuinely public write surface in the app, so it got extra security testing: confirmed an anonymous submission succeeds, confirmed that same anonymous visitor **cannot** read back their own or anyone else's request (`0` rows visible), and confirmed staff can see and manage everything normally. The public form deliberately does not show a dropdown of existing patients — that would leak the client list to anyone who visits the page — it takes a plain typed name instead, which staff can privately link to a real patient record later if relevant.
-  - **Known gap, worth knowing about**: there's no spam/abuse protection (rate limiting, CAPTCHA) on the public form yet. Row Level Security correctly limits what a submitter can do (insert-only, no reading), but nothing yet stops someone from submitting the form many times in a row. Worth adding before this URL gets shared publicly at scale — options include Vercel's bot protection or a CAPTCHA service, neither wired up here.
-- **Insurance calculator (Versicherungsrechner)**: a staff-facing tool (not public — built for use during onboarding conversations with families, per the original proposal) at `/insurance-calculator`. Enter a Pflegegrad and estimated care hours/rate, see live-calculated insurance coverage vs. client out-of-pocket cost. Rates (Pflegesachleistung, Pflegegeld, Entlastungsbetrag) are stored in an admin-editable database table, not hardcoded — because these figures are set by German law and periodically revised (last changed Jan 2025, next scheduled Jan 2028). Current figures were researched and cross-checked against multiple sources before building: Pflegesachleistung €796/1,497/1,859/2,299 for Pflegegrad 2–5, Entlastungsbetrag €131 for all grades including 1. Calculation logic verified against two scenarios (cost fully covered by budget, and cost exceeding budget) before shipping. Deliberately excludes Pflegegeld combination benefits, Verhinderungspflege, and Kurzzeitpflege — those involve genuinely complex proportional rules, and a wrong estimate on real household budgets is worse than clearly saying "not covered here." The calculator carries a visible disclaimer to that effect, and notes it isn't legal/financial advice.
-- **Document search (RAG)**: a Documents page — add internal knowledge (policies, procedures, general notes, optionally linked to a patient), organized into freeform **folders** (e.g. "Finance", "HR", "Care Procedures" — type an existing one or create a new one), and search it back. **Supports PDF and .txt file upload**, not just pasted text: PDFs are automatically text-extracted (via `pdf-parse` v2 — note its API changed significantly from v1, documented in `lib/pdf.ts`) so they're searchable, and the original file stays downloadable via a signed URL (files live in a private Supabase Storage bucket, `authenticated`-only, same access pattern as everything else). Verified: PDF extraction tested against a real generated PDF before wiring it in; storage bucket, its RLS policy, and the new `documents` columns all confirmed live in the database. **Not verified from this environment**: an actual end-to-end file upload through the browser — that needs a real authenticated session, which only exists once the app is running locally. Test this yourself once it's up: add a document with a real PDF attached, confirm it appears searchable and downloadable.
-  - Search runs in **text-fallback mode** right now (no `OPENAI_API_KEY` configured): plain keyword match instead of true semantic search, clearly labeled as such in the UI. Adding an OpenAI key upgrades it automatically, no code changes needed.
-  - Max file size 10MB (configured in `next.config.mjs`). Scanned image-only PDFs (no real text layer) won't have extractable text — they'll still upload and be downloadable, just not searchable.
+Each route requires `Authorization: Bearer <CRON_SECRET>`. Configure the same strong, random `CRON_SECRET` in Vercel so scheduled requests are authorized. The WhatsApp sender also needs a Meta Business Platform account, a registered number, and an approved message template. The configured template receives patient name, medication name, dosage, and scheduled time; review consent and applicable privacy requirements before enabling real sends.
 
-## ⚠️ Known risk worth addressing deliberately: Next.js version
+## Access control and known gaps
 
-While adding the PDF library, a routine `npm audit` surfaced something more important than the audit itself: **Vercel has stated Next.js 14.x will not receive further security patches** for vulnerabilities disclosed since May 2026 (middleware bypass, XSS, SSRF, cache poisoning, DoS — spread across the May, July, and August 2026 security releases). The only real fix is upgrading to Next.js 15.x or 16.x — a major-version migration, not a quick patch bump like the one done earlier in this project (14.2.15 → 14.2.35 for the December 2025 issue).
+- Protected application routes require a signed-in Supabase user. **Current RLS policies generally grant the same staff-level access to every authenticated user; `admin` and `nurse` roles are not yet enforced separately.** Do not enable unrestricted public sign-up. Create and manage accounts deliberately until role-based access is implemented.
+- `/book` is intentionally public and permits anonymous request submission only; anonymous users cannot read booking requests. There is no rate limiting or CAPTCHA yet, so add abuse protection before promoting the public form broadly.
+- There is no family portal, patient-facing dashboard, patient self-confirmation, SMS sender, route optimization, emergency button, AI chatbot, or public marketing site.
+- The insurance calculator covers only the inputs and benefits implemented in the app. Verify rates and calculation assumptions with qualified sources before relying on estimates.
+- Privacy features support operational workflows but do not replace a legal review, retention policy, backups, or a complete compliance program.
+- The project currently uses Next.js 14.2.35. Review framework support and security updates before production use, and plan a tested upgrade as needed.
 
-This wasn't fixed as part of today's work deliberately — a major version migration can involve breaking changes (async `cookies()`/`headers()`, caching defaults, routing behavior) across every page in the app, and doing it safely needs its own dedicated testing pass, not a rushed change alongside a feature build. Worth prioritizing before this app handles real client data in production, especially now that it has a genuine public-facing surface (`/book`).
-- **WhatsApp reminder sending**: a cron route (`/api/cron/send-reminders`, every 5 minutes) that finds due reminders, checks the patient has active WhatsApp consent, sends via the Meta Cloud API, and logs the attempt — success or failure — to `notifications`. Verified against the live database: the due-reminder + consent-check query was tested directly, both for a consented patient (correctly selected) and a non-consented one (correctly skipped with a logged reason).
-  - **Runs in dry-run mode until real Meta credentials exist.** Without `WHATSAPP_ACCESS_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` set, it does everything except the actual network call — logs a `queued` notification and leaves the reminder `pending` rather than falsely marking it `sent`. This means the whole pipeline is testable today, and swapping in real credentials later needs zero code changes.
-  - **What only your friend can provide**: a WhatsApp Business Platform account through Meta Business Manager (requires business verification), a registered sending phone number, and — importantly — at least one **pre-approved message template**. Meta does not allow arbitrary free-text messages for business-initiated conversations like reminders; only approved templates can be sent outside a 24h customer-service window. The code assumes a template named `medication_reminder` (configurable via `WHATSAPP_TEMPLATE_NAME`) with four body variables in order: patient name, medication name, dosage, time. That template needs to be created and approved in Meta Business Manager before anything will actually send — this is usually the slowest step, worth starting early.
-  - **To test it locally** once you have your service role key in `.env.local`: run `npm run dev`, then in another terminal: `curl -H "Authorization: Bearer <your CRON_SECRET>" http://localhost:3000/api/cron/send-reminders` — it'll report what it processed, in dry-run mode, without needing real WhatsApp credentials.
-- **DSGVO/GDPR tooling** (Standard tier requirement):
-  - **Audit log** — every change to patients/medications/reminders is captured automatically via a database trigger (who, what, when, and the full before/after state), visible per-patient on their detail page
-  - **Consent tracking** — data-processing consent is required to add a patient; WhatsApp-communication consent is tracked separately and gates whether a reminder actually gets sent (see above)
-  - **Data export** — "Export patient data" on the patient detail page downloads that patient's complete record (profile, medications, reminders, consents, audit history) as JSON — covers Art. 15/20 access and portability requests
-  - **Deletion requests** — Art. 17 right to erasure as a reviewable workflow, not an instant delete: someone requests it with a reason, an admin completes or rejects it. Completing cascades the actual deletion; the request record itself stays as evidence the process was followed, and the audit log retains a snapshot of what was deleted (worth revisiting the exact retention period with legal counsel)
+## Supabase Security Advisor
 
-## What's deliberately not here yet
+On 2026-10-07, the project's Security Advisor screenshot showed **0 errors and 6 warnings**:
 
-- **Patient/family self-confirmation** — only staff can currently mark reminders confirmed.
-- **Family portal (Module 3)** and **patient-facing dashboard** — not started. The `profiles.role` field supports `'family'`, but RLS doesn't yet differentiate by role — everything authenticated currently has the same access. Worth tightening before family/patient logins exist.
-- **Role-based access control enforcement** — `nurse` vs `admin` aren't currently differentiated at the database level, despite the schema supporting both.
-- **Appointment requests, insurance calculator, emergency button, AI chatbot, competitive analysis** — not started.
-- **Public marketing website (DE/EN)** — separate deliverable from this app; not addressed here.
+1. The `vector` extension is installed in the `public` schema.
+2. Two permissive-policy warnings on `public.booking_requests`: the anonymous insert policy intentionally allows public submissions; the authenticated staff policy allows any signed-in user to manage requests.
+3. Signed-in users can execute the `SECURITY DEFINER` functions `generate_daily_reminders(date)` and `match_document_chunks(vector, int)`.
+4. Leaked Password Protection is disabled in Supabase Auth.
 
-## Manual dashboard step worth doing
-
-Supabase flagged **leaked password protection** as disabled for this project (checks new passwords against known breach databases via HaveIBeenPwned). Not exposed via the MCP connector — enable it manually: Dashboard → Authentication → Policies/Providers → Password settings.
-
-## Compliance notes carried over from planning
-
-- Supabase should stay pinned to an EU region for the lifetime of the project.
-- If/when WhatsApp is wired up, get a Data Processing Agreement with Meta and explicit consent flows in place first — many German care providers avoid WhatsApp for health-data messages entirely and use SMS or in-app notifications instead. Worth a quick legal check before committing either way.
-- If the insurance calculator gets built later, keep its output framed as an estimate, not a guaranteed figure.
+These warnings are not automatically all defects: the public insert and authenticated function access support current app features. Reassess them if access requirements change, tighten permissions where appropriate, and enable leaked-password protection in the Supabase Auth password settings.
