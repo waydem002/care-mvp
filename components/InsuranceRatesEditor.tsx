@@ -51,8 +51,12 @@ export default function InsuranceRatesEditor({ rates }: { rates: InsuranceRate[]
                 <label className="mb-1 block text-[11px] text-muted">Effective from</label>
                 <input name="effective_from" type="date" defaultValue={rate.effective_from} className={inputClass} />
               </div>
+              <div>
+                <label className="mb-1 block text-[11px] text-muted">Our hourly rate € (calculator)</label>
+                <input name="hourly_rate_eur" type="number" step="0.01" defaultValue={rate.hourly_rate_eur ?? ""} className={inputClass} />
+              </div>
               <input type="hidden" name="notes" value={rate.notes ?? ""} />
-              <div className="col-span-2 sm:col-span-5">
+              <div className="col-span-2 sm:col-span-6">
                 <button
                   type="submit"
                   disabled={isPending}

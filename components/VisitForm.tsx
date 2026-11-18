@@ -57,14 +57,14 @@ export default function VisitForm({ staff, patients }: { staff: StaffMember[]; p
       </div>
 
       <div>
-        <label className={labelClass} htmlFor="sequence_order">Stop number</label>
-        <input id="sequence_order" name="sequence_order" type="number" min="1" defaultValue="1" required className={inputClass} />
-        <p className="mt-1 text-xs text-muted">Order within this staff member's route that day.</p>
+        <label className={labelClass} htmlFor="scheduled_time">Start time</label>
+        <input id="scheduled_time" name="scheduled_time" type="time" className={inputClass} />
+        <p className="mt-1 text-xs text-muted">The stop is placed in time order automatically. You can drag it afterwards.</p>
       </div>
 
       <div>
-        <label className={labelClass} htmlFor="scheduled_time">Estimated time</label>
-        <input id="scheduled_time" name="scheduled_time" type="time" className={inputClass} />
+        <label className={labelClass} htmlFor="end_time">End time</label>
+        <input id="end_time" name="end_time" type="time" className={inputClass} />
       </div>
 
       <div>

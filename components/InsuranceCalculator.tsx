@@ -42,7 +42,13 @@ export default function InsuranceCalculator({ rates }: { rates: InsuranceRate[] 
           <select
             id="pflegegrad"
             value={pflegegrad}
-            onChange={(e) => setPflegegrad(Number(e.target.value))}
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              setPflegegrad(next);
+              // Use our own hourly rate for that Pflegegrad when one is saved.
+              const nextRate = rates.find((r) => r.pflegegrad === next);
+              if (nextRate?.hourly_rate_eur != null) setHourlyRate(nextRate.hourly_rate_eur);
+            }}
             className={inputClass}
           >
             {rates.map((r) => (

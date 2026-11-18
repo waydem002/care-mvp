@@ -78,6 +78,24 @@ export type StaffMember = {
   email: string | null;
   active: boolean;
   created_at: string;
+  staff_type: "care" | "cleaning";
+  can_cover: boolean;
+  usual_shift: "frueh" | "spaet" | "flexibel" | null;
+  planning_mode: "auto" | "manual";
+  fixed_weekday_off: number | null; // 1 = Monday … 5 = Friday
+  weekend_pattern: "alternate" | "sunday_only" | "saturday_only" | "off";
+};
+
+export type AbsenceType = "urlaub" | "krank" | "frei" | "sonstiges";
+
+export type Absence = {
+  id: string;
+  staff_member_id: string;
+  start_date: string;
+  end_date: string;
+  absence_type: AbsenceType;
+  note: string | null;
+  staff_name?: string;
 };
 
 export type ShiftType = "fruehdienst" | "spaetdienst" | "nachtdienst" | "bereitschaft" | "custom";
@@ -107,9 +125,23 @@ export type Visit = {
   visit_type: VisitType;
   status: VisitStatus;
   notes: string | null;
+  end_time: string | null;
+  tags: string[];
+  companion_name: string | null;
   staff_name?: string;
   patient_name?: string;
   patient_address?: string | null;
+};
+
+export type DayStatus = "frei" | "fd" | "sd" | "abenddienst" | "buerodienst";
+
+export type TourDayStatus = {
+  id: string;
+  staff_member_id: string;
+  status_date: string;
+  status: DayStatus;
+  companion_name: string | null;
+  staff_name?: string;
 };
 
 export type RequestType = "consultation" | "schedule_change" | "extra_visit" | "callback" | "other";
@@ -139,6 +171,7 @@ export type InsuranceRate = {
   entlastungsbetrag_monthly: number;
   effective_from: string;
   notes: string | null;
+  hourly_rate_eur: number | null;
 };
 
 export type DocumentCategory = "policy" | "procedure" | "general" | "patient_note";
@@ -154,4 +187,12 @@ export type Document = {
   file_name: string | null;
   created_at: string;
   patient_name?: string;
+};
+
+
+export type ClientScheduleRow = {
+  patient_id: string;
+  weekday: number; // 1 = Monday … 7 = Sunday
+  kind: "care" | "cleaning";
+  visits_per_day: number;
 };

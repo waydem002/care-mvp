@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Reminder, Patient, Medication, Consent, DeletionRequest, AuditLogEntry, StaffMember, Shift, Visit, BookingRequest, InsuranceRate, Document } from "@/lib/types";
+import type { Reminder, Patient, Medication, Consent, DeletionRequest, AuditLogEntry, StaffMember, Shift, Visit, TourDayStatus, Absence, ClientScheduleRow, BookingRequest, InsuranceRate, Document } from "@/lib/types";
 
 function startAndEndOfDay(date = new Date()) {
   const start = new Date(date);
@@ -195,6 +195,9 @@ type VisitRow = {
   visit_type: Visit["visit_type"];
   status: Visit["status"];
   notes: string | null;
+  end_time: string | null;
+  tags: string[] | null;
+  companion_name: string | null;
   staff_members: { full_name: string } | null;
   patients: { full_name: string; address: string | null } | null;
 };
@@ -221,6 +224,9 @@ export async function getVisitsForWeek(startDateKey: string, endDateKey: string)
     visit_type: r.visit_type,
     status: r.status,
     notes: r.notes,
+    end_time: r.end_time ?? null,
+    tags: r.tags ?? [],
+    companion_name: r.companion_name ?? null,
     staff_name: r.staff_members?.full_name ?? "Unknown",
     patient_name: r.patients?.full_name ?? "Unknown",
     patient_address: r.patients?.address ?? null,
@@ -254,6 +260,7 @@ export async function getInsuranceRates(): Promise<InsuranceRate[]> {
     entlastungsbetrag_monthly: Number(r.entlastungsbetrag_monthly),
     effective_from: r.effective_from,
     notes: r.notes,
+    hourly_rate_eur: r.hourly_rate_eur === null || r.hourly_rate_eur === undefined ? null : Number(r.hourly_rate_eur),
   })) as InsuranceRate[];
 }
 
@@ -286,4 +293,58 @@ export async function getDocumentFolders(): Promise<string[]> {
   if (error) throw new Error(error.message);
   const folders = new Set((data ?? []).map((r: any) => r.folder as string));
   return Array.from(folders).sort();
+}
+
+
+export async function getTourDayStatusForWeek(startDateKey: string, endDateKey: string): Promise<TourDayStatus[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("tour_day_status")
+    .select("*, staff_members(full_name)")
+    .gte("status_date", startDateKey)
+    .lte("status_date", endDateKey);
+  if (error) throw new Error(error.message);
+  return (data as any[]).map((r) => ({
+    id: r.id,
+    staff_member_id: r.staff_member_id,
+    status_date: r.status_date,
+    status: r.status,
+    companion_name: r.companion_name,
+    staff_name: r.staff_members?.full_name ?? "Unknown",
+  }));
+}
+
+
+export async function getAbsences(fromKey?: string, toKey?: string): Promise<Absence[]> {
+  const supabase = createClient();
+  let q = supabase.from("absences").select("*, staff_members(full_name)").order("start_date", { ascending: true });
+  // overlap with [fromKey, toKey]
+  if (fromKey) q = q.gte("end_date", fromKey);
+  if (toKey) q = q.lte("start_date", toKey);
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return (data as any[]).map((r) => ({
+    id: r.id,
+    staff_member_id: r.staff_member_id,
+    start_date: r.start_date,
+    end_date: r.end_date,
+    absence_type: r.absence_type,
+    note: r.note,
+    staff_name: r.staff_members?.full_name ?? "Unknown",
+  }));
+}
+
+
+export async function getClientSchedule(): Promise<{ rows: ClientScheduleRow[]; tableMissing: boolean }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("client_schedule").select("patient_id, weekday, kind, visits_per_day");
+  if (error) return { rows: [], tableMissing: true };
+  return { rows: data as ClientScheduleRow[], tableMissing: false };
+}
+
+export async function getScheduleSkips(weekStartKey: string): Promise<string[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("schedule_skips").select("patient_id").eq("week_start", weekStartKey);
+  if (error) return [];
+  return (data ?? []).map((r: any) => r.patient_id as string);
 }

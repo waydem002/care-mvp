@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { updateVisitStatus, deleteVisit } from "@/lib/actions";
+import VisitMoveMenu from "@/components/VisitMoveMenu";
 import type { Visit } from "@/lib/types";
 
 const visitTypeLabels: Record<string, string> = {
@@ -11,21 +12,40 @@ const visitTypeLabels: Record<string, string> = {
   other: "Sonstiges",
 };
 
+const tagLabels: Record<string, string> = {
+  duschen: "Duschen",
+  arzt: "Arzt",
+  betreuung: "Betreuung",
+  keine_tp: "keine TP",
+  kkh: "KKH",
+  peg: "PEG",
+  termin: "Termin",
+  therapie: "Therapie",
+  einkaufen: "Einkaufen",
+  mit_pflege: "mit Pflege",
+  reinigung: "Reinigung",
+};
+
 const statusStyles: Record<string, string> = {
   planned: "bg-border text-ink",
   completed: "bg-status-confirmedBg text-status-confirmed",
   cancelled: "bg-status-missedBg text-status-missed",
 };
 
-export default function VisitCard({ visit }: { visit: Visit }) {
+export default function VisitCard({ visit, position }: { visit: Visit; position?: number }) {
   const [isPending, startTransition] = useTransition();
 
   return (
     <div className="flex items-start justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2">
       <div className="min-w-0">
         <p className="text-sm font-medium text-ink">
-          {visit.sequence_order}. {visit.patient_name}
-          {visit.scheduled_time && <span className="ml-1.5 font-normal text-muted">{visit.scheduled_time.slice(0, 5)}</span>}
+          {position ?? visit.sequence_order}. {visit.patient_name}
+          {visit.scheduled_time && (
+            <span className="ml-1.5 font-normal text-muted">
+              {visit.scheduled_time.slice(0, 5)}
+              {visit.end_time ? `–${visit.end_time.slice(0, 5)}` : ""}
+            </span>
+          )}
         </p>
         {visit.patient_address && <p className="truncate text-xs text-muted">{visit.patient_address}</p>}
         <div className="mt-1 flex items-center gap-1.5">
@@ -33,6 +53,11 @@ export default function VisitCard({ visit }: { visit: Visit }) {
             {visit.status}
           </span>
           <span className="text-[11px] text-muted">{visitTypeLabels[visit.visit_type] ?? visit.visit_type}</span>
+          {visit.tags?.map((t) => (
+            <span key={t} className="rounded-full bg-paper px-2 py-0.5 text-[11px] font-medium text-ink">
+              {tagLabels[t] ?? t}
+            </span>
+          ))}
         </div>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
@@ -54,6 +79,7 @@ export default function VisitCard({ visit }: { visit: Visit }) {
             </button>
           </div>
         )}
+        <VisitMoveMenu visitId={visit.id} staffId={visit.staff_member_id} patientId={visit.patient_id} />
         <button
           disabled={isPending}
           onClick={() => startTransition(() => deleteVisit(visit.id))}

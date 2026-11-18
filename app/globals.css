@@ -19,3 +19,28 @@ body {
   outline: 2px solid #33415c;
   outline-offset: 2px;
 }
+
+/* Printable tour plans: hide app chrome, A4 portrait, one tour (whole week) per page. */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  aside,
+  .print-hide {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .print-page {
+    break-after: page;
+  }
+  .print-page:last-child {
+    break-after: auto;
+  }
+}

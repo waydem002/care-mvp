@@ -26,6 +26,8 @@ export default async function StaffPage() {
             <tr className="border-b border-border bg-paper text-xs font-medium uppercase tracking-wide text-muted">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Can cover</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">Email</th>
             </tr>
@@ -33,7 +35,7 @@ export default async function StaffPage() {
           <tbody>
             {staff.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted">
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted">
                   No staff members yet — add the first one above.
                 </td>
               </tr>
@@ -42,6 +44,8 @@ export default async function StaffPage() {
               <tr key={s.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 font-medium text-ink">{s.full_name}</td>
                 <td className="px-4 py-3 text-ink">{roleLabels[s.role] ?? s.role}</td>
+                <td className="px-4 py-3 text-ink">{s.staff_type === "cleaning" ? "Cleaning" : "Care"}{s.usual_shift === "spaet" ? " · Spätdienst" : ""}</td>
+                <td className="px-4 py-3 text-ink">{s.can_cover ? "Yes" : "—"}</td>
                 <td className="px-4 py-3 text-ink">{s.phone ?? "—"}</td>
                 <td className="px-4 py-3 text-ink">{s.email ?? "—"}</td>
               </tr>

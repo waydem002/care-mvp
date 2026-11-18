@@ -11,6 +11,7 @@ const links = [
   { href: "/staff", label: "Staff" },
   { href: "/schedule", label: "Schedule" },
   { href: "/tours", label: "Tours" },
+  { href: "/absences", label: "Absences" },
   { href: "/requests", label: "Booking requests" },
   { href: "/insurance-calculator", label: "Insurance calculator" },
   { href: "/documents", label: "Documents" },
